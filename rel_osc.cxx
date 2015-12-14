@@ -1,69 +1,83 @@
-// Lorenz.cxx
-// Runge Kutta 4th order
-// GL, 4.12.2015
-//--------------------
-#include <cmath>
 #include <iostream>
 #include <fstream>
-//--------------------
-void f(double* const y0, const double x);
-void RKstep(double* const yn, const double* const y0, const double x, const double dx);
-//--------------------
+#include <cmath>
+
 using namespace std;
-//--------------------
 
-int main(void)
-{
-	ofstream out("solution");
-  const int dim = 3;
-	double dx = 0.001,x=0;
-	const double L = 100;
-  double y0[dim] = {1.01, 1.0, 1.0};
-	double yn[dim];
-
-  out << x << "\t" << y0[0] << "\t" << y0[1] << "\t" << y0[2] << endl;
-	while(x<=L)
-	{
-		x += dx;
-		RKstep(yn, y0, x, dx);
-    for(int i=0; i<dim; i++) y0[i] = yn[i];
-		out << x << "\t" << y0[0] << "\t" << y0[1] << "\t" << y0[2] << endl;
-	}
-	out.close();
-	return(0);
+void f(double* y, double* k){
+    k[0]=y[1]/sqrt(1-pow(y[1],2));
+    k[1]=-y[0];
 }
-//-------------------
-void RKstep(double* const yn, const double* const y0,
-            const double x, const double dx)
-{
-	const int dim = 3;
-	double k1[dim], k2[dim], k3[dim], k4[dim];
 
-  for(int i=0;i<dim; i++) k1[i] = y0[i];
-	f(k1, x);
 
-	for(int i=0;i<dim; i++) k2[i] = y0[i] + 0.5 * dx * k1[i];
-  f(k2, x+0.5*dx);
+int main(void){
+    	int N = 50;
+	double step = 0.1;
+	double eps = 0.0001;
+        double max_length=20;
+        
+        const int dim = 2;
+        double x0[dim],xn[dim];
+        double k1[dim],k2[dim],k3[dim],k4[dim];
+        double x;
+        
+        double min, max, theta, a, b, c;
+        
+        
+	
+        cout << "# x0" << '\t' << "Periode" << endl;
+        for( int i = 1; i <= N; i++){
+            x = 0;
+            x0[0]=i*step;
+            x0[1]=0;  
+            while(x<max_length){  
+                f(x0,k1);
+                xn[0] = x0[0] + step*0.5*k1[0];
+                xn[1] = x0[1] + step*0.5*k1[1];
+                
+                f(xn,k2);
+                xn[0] = x0[0] + step*0.5*k2[0];
+                xn[1] = x0[1] + step*0.5*k2[1];
+                
+                f(xn,k3);
+                xn[0] = x0[0] + step*k2[0];
+                xn[1] = x0[1] + step*k2[1];
+                
+                f(xn,k4);
+                
+                xn[0]=x0[0]+step/6*(k1[0]+2*k2[0]+2*k3[0]+k4[0]);
+                xn[1]=x0[1]+step/6*(k1[1]+2*k2[1]+2*k3[1]+k4[1]);
+                
+                if((xn[1]>0) && (x0[1]<0))
+                    break;
+                
+                x=x+step;
+                x0[0]=xn[0];
+                x0[1]=xn[1];
+            } 
+            
+            min = 0;
+            max = 1;
+            while((max-min)<eps) {
+                theta=(max-min)/2;
+                
+                a=theta-3/2*pow(theta,2)+2/3*pow(theta,3);
+                b=pow(theta,2)-2/3*pow(theta,3);
+                c=-pow(theta,2)/2+2/3*pow(theta,3);
+                
+                xn[1]=x0[1]+step*(a*k1[1]+b*k2[1]+b*k3[1]+c*k4[1]);
+                
+                if(xn[1]>0)
+                    max = theta;
+                else 
+                    min = theta;   
+            }
+                
+            
 
-	for(int i=0;i<dim; i++) k3[i] = y0[i] + 0.5 * dx * k2[i];
-	f(k3, x+0.5*dx);
 
-  for(int i=0;i<dim; i++) k4[i] = y0[i] + dx * k3[i];
-	f(k4,  x+dx);
-
-	for(int i=0;i<dim; i++)
-	 yn[i] = y0[i] + 1./6.*dx*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i]);
-}
-//-------------------
-// Lorenz model
-void f(double* const y0, const double x)
-{
-	const double a = 10;
-	const double b = 28;
-	const double c = 8.0/3.0;
-	double y[3] = { y0[0], y0[1], y0[2] };
-
-  y0[0] = a*(y[1] - y[0]);
-	y0[1] = y[0]*(b - y[2]) - y[1];
-	y0[2] = y[0]*y[1] - c*y[2];
+        cout << i*step << '\t' << x+min << endl;   
+        }
+        
+        return 0;
 }
